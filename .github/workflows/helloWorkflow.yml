@@ -1,0 +1,36 @@
+name: Deploy our serverless YAML file
+on:
+  workflow_dispatch: # used to trigger the action manualy.
+    inputs:
+      name: 
+        description: 'Enter your record name'
+        default: 'domain'
+        required: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+     
+
+    steps:
+      - name: Checkout repository
+        run: actions/setup-node@v2
+
+      - name: Install Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+        
+
+      - name: install  serverless
+        run: npm install -g serverless
+
+      - name: Deploy serverless function.
+        run: |
+          cd server 
+          sls  plugin install -n serverless-domain-manager
+          serverless create_domain --stage ${{ github.event.inputs.name }} 
+          serverless deploy --stage ${{ github.event.inputs.name }} 
+    # here you must enter your credintials, after saving it in GitHub secrets.
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
