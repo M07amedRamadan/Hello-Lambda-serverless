@@ -1,0 +1,45 @@
+service: MyServer
+on:
+  workflow_disbatch:
+    
+provider:
+  name: aws
+  runtime: nodejs16.x
+  # The stage is used to trigger the yaml file in GitHub action and also be the name of the domain record created in your domain.
+  stage: ${opt:stage, 'defaultValue'} # defaulValue is the value of stage if you does not entered a stage.
+  region: ${self:provider.stage, 'us-west-1'}
+plugins:
+  - serverless-domain-manager # This package used to creating the domain.
+
+custom:
+  stage: ${opt:stage, 'defaultValue''}
+  # This section used to create a domain record on Route53 
+  # and attach it dynamically with the API that will created also by this file at the end. 
+  customDomain:      
+  # The record name will be like:   
+    domainName: ${self:custom.stage, 'defaultName'}.api.domain.com #There you must have Route53 domain called domain.com
+    basepath: ''
+    stage: ${self:custom.stage}
+    # This option used to make record type, also will create two records, (A) for ipv4 and (AAAA) for ipv6. 
+    createRoute53Record: true 
+    createRoute53IPv6Record: false # to create only ipv4 record (A)
+    endpointType: regional # you also can use edge instead it if you need.
+    certificateArn: "ARN_of_your_Certification" #Domain name*.api.domain.com, it must be as the domain specified.
+    securityPolicy: tls_1_2
+
+functions:
+# This section is our serverless function. 
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          path: /
+          method: ANY
+          cors: true #to enable request from diffrent domains
+
+resources:
+  Resources:
+    ApiGatewayRestApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: yourAPIName  #Enter Your API Gateway Name.
